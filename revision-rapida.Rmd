@@ -1,0 +1,100 @@
+---
+title: "Revisión rápida de datos exploratorios de acoso sexual en USAC"
+author: "Oscar de León"
+date: "2/18/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+# Load used package
+library(package = "tidyverse")
+
+# Useful functions
+long_table <- function(.data, caption = NULL){
+  .data %>%
+    knitr::kable(
+      caption = caption,
+      format = "latex", booktabs = TRUE, longtable = TRUE
+    ) %>%
+    kableExtra::kable_styling(
+      full_width = FALSE, latex_options = "repeat_header"
+    ) %>%
+    kableExtra::column_spec(1, width = "40em") %>%
+    kableExtra::column_spec(2, width = "5em")
+}
+
+# Configure knitting
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r get-data, include = FALSE}
+source(file = "scripts/read-data.R", encoding = "UTF-8")
+```
+
+
+Una revisión superficial de los datos muestra que hay variables que son de texto abierto, por lo que no serían adecuadas para un análisis automatizado.
+Adicionalmente una de estas variables, segun el texto, sugiere que incluye nombres de personas, por lo que los valores no fueron revisados (solo un conteo de valores únicos sin importar lo que dijeran).
+
+```{r}
+acoso_usac %>%
+  select(
+    aa_quien_fue_dirigida_la_denuncia,
+    si_la_persona_que_te_acosa3_fue_tu_profesora_escribe_su_nombre_te_recordamos_que_esta_encuesta_es_ana3nima,
+    si_fue_dentro_de_un_edificio_distinto_a_tu_unidad_acadacmica_indica_cual_si_respondiste_esta_pregunta_pasa_a_la_seccia3n_3
+  ) %>%
+  gather(variable, value, na.rm = TRUE) %>%
+  mutate(
+    variable = gsub("_", " ", variable)
+  ) %>%
+  count(variable, value) %>%
+  count(Pregunta = variable) %>%
+  long_table(caption = "Numero de respuestas únicas a cada pregunta")
+```
+
+
+Otras preguntas, a pesar de que los datos sugieren que tenian una lista de opciones sugeridas como respuesta (i.e. texto complejo que se repite muchas veces), también parece que tenían la opción de incluir texto abierto
+(ver tablas 2 y 3).
+Si aun se desea capturar esa información, para implementar el cuestionario nuevo sería necesario hacerlo en dos preguntas separadas para que los datos puedan ser
+analizados de manera automatizada.
+
+
+```{r}
+acoso_usac %>%
+  select(marcatemporal, tipos_de_acoso) %>%
+  separate_rows(tipos_de_acoso, sep = ";") %>%
+  count(Respuesta = tipos_de_acoso, sort = TRUE) %>%
+  long_table(
+    caption = "Tipo de acoso. Respuestas incluyen lista de opciones y texto libre."
+  )
+```
+
+
+```{r}
+acoso_usac %>%
+  select(marcatemporal, aquac_sentiste) %>%
+  separate_rows(aquac_sentiste, sep = ";") %>%
+  count(Respuesta = aquac_sentiste, sort = TRUE) %>%
+  long_table(
+    caption = "Efecto del acoso. Respuestas incluyen lista de opciones y texto libre."
+  )
+```
+
+\newpage
+
+El resto de preguntas parecen todas ser de selección múltiple, por lo que definir el análisis automático de cada una es más sencillo.
+
+```{r results='asis'}
+each_question %>%
+  arrange(variable, desc(n)) %>%
+  mutate(variable = gsub("_", " ", variable)) %>%
+  split(.$variable) %>%
+  walk(
+    ~ knitr::kable(
+      select(.x, -variable),
+      caption = first(.x$variable)
+    ) %>%
+      print()
+  )
+```
+
