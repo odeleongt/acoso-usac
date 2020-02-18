@@ -1,0 +1,19 @@
+# Ignore data
+data/
+
+# Ignore common outputs
+output/
+*.html
+*.pdf
+*.png
+*.jp*g
+*.doc*
+*.xls*
+*.ppt*
+*.od*
+
+# Ignore common files and folders
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
