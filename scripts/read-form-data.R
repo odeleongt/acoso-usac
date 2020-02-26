@@ -39,4 +39,26 @@ each_question <- acoso_usac %>%
 each_question %>%
   count(variable, sort = TRUE)
 
+
+acoso_locations <- acoso_usac %>%
+  select(
+    marcatemporal,
+    unit = unidad_acadacmica_en_la_que_estudias,
+    where = si_fue_dentro_de_tu_unidad_acadacmica_indica_en_quac_parte_si_respondiste_esta_pregunta_pasa_a_la_seccia3n_3,
+    other = si_fue_dentro_de_un_edificio_distinto_a_tu_unidad_acadacmica_indica_cual_si_respondiste_esta_pregunta_pasa_a_la_seccia3n_3,
+    location = si_no_fue_dentro_de_tu_unidad_acadacmica_u_otra_unidad_ada3nde_fue
+  ) %>%
+  arrange(is.na(location), is.na(other), is.na(where)) %>%
+  print(n = Inf)
+  
+acoso_locations %>% {
+    if(!file.exists("output/locations_ref.xlsx")) {
+      list(
+        specific = filter(., !is.na(other) | !is.na(location)),
+        units = count(., unit)
+      ) %>%
+      writexl::write_xlsx(path = "output/locations_ref.xlsx")
+    }
+  }
+
 # End of script
